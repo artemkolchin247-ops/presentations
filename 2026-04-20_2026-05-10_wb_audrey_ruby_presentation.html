@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Audrey + Ruby на WB — динамика 3 недель</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #faf8f3;
+    --ink: #1a1a2e;
+    --muted: #6b7280;
+    --line: #e5e1d6;
+    --audrey: #0f766e;
+    --audrey-soft: #d9f0ed;
+    --ruby: #b91c1c;
+    --ruby-soft: #fde2e2;
+    --gold: #b45309;
+    --good: #15803d;
+    --bad: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PT Sans", sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .slide {
+    min-height: 100vh;
+    padding: 60px 80px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .slide-num {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 48px;
+    line-height: 1.1;
+    margin: 0 0 16px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  h2 {
+    font-size: 36px;
+    line-height: 1.15;
+    margin: 0 0 24px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+  }
+  h3 {
+    font-size: 22px;
+    margin: 32px 0 12px;
+    font-weight: 700;
+  }
+  p { margin: 0 0 14px; }
+  .lead { font-size: 22px; line-height: 1.4; color: var(--ink); max-width: 1000px; }
+  .muted { color: var(--muted); }
+  .audrey { color: var(--audrey); }
+  .ruby   { color: var(--ruby); }
+  .good   { color: var(--good); }
+  .bad    { color: var(--bad); }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+  .row-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 24px 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .card.audrey-card { border-top: 4px solid var(--audrey); }
+  .card.ruby-card   { border-top: 4px solid var(--ruby); }
+
+  .kpi {
+    font-size: 56px;
+    line-height: 1;
+    font-weight: 800;
+    margin: 8px 0 4px;
+  }
+  .kpi-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+  }
+  .kpi-delta {
+    font-size: 16px;
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  .trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .week-box {
+    background: white;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    text-align: center;
+  }
+  .week-box .num { font-size: 28px; font-weight: 800; }
+  .week-box .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  .chart-wrap {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 12px 0 20px;
+  }
+  .chart-wrap h4 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  canvas { max-height: 340px !important; }
+
+  .hyp {
+    border-left: 4px solid var(--gold);
+    background: #fff8e6;
+    padding: 16px 22px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .hyp-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gold);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .what-works, .what-fails {
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin: 12px 0;
+  }
+  .what-works { background: #e7f5ed; border-left: 4px solid var(--good); }
+  .what-fails { background: #fde2e2; border-left: 4px solid var(--bad); }
+  .what-works strong, .what-fails strong { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  th { background: #f5f1e8; font-weight: 700; }
+  tr:last-child td { border-bottom: none; }
+  td.num-cell, th.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .action-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 200px 140px 200px;
+    gap: 16px;
+    align-items: center;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .action-row .num { font-size: 28px; font-weight: 800; color: var(--gold); }
+  .action-row .title { font-weight: 600; }
+  .action-row .tag {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+  .tag-margin { background: #fef3c7; color: #92400e; }
+  .tag-ads { background: #dbeafe; color: #1e40af; }
+  .tag-turn { background: #f3e8ff; color: #6b21a8; }
+  .action-row .effect { font-weight: 700; font-size: 15px; }
+  .action-row .est { font-size: 13px; color: var(--muted); }
+
+  .arrow-flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .arrow-flow .step {
+    background: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .arrow-flow .arrow {
+    font-size: 20px;
+    color: var(--gold);
+  }
+
+  .toc {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    max-width: 240px;
+  }
+  .toc summary {
+    list-style: none;
+    cursor: pointer;
+    background: var(--ink);
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    margin-left: auto;
+    transition: all 0.25s ease;
+    user-select: none;
+  }
+  .toc summary:hover { background: var(--gold); transform: scale(1.05); }
+  .toc summary::-webkit-details-marker { display: none; }
+  .toc summary::before {
+    content: '☰';
+    transition: transform 0.25s ease;
+  }
+  .toc[open] summary {
+    background: var(--gold);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  .toc[open] summary::before { content: '✕'; }
+  .toc-panel {
+    margin-top: 10px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .toc-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .toc a {
+    display: block;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 1px solid transparent;
+  }
+  .toc a:hover { color: var(--gold); }
+
+  /* Heatmap */
+  table.heatmap {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  table.heatmap th {
+    background: transparent;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 6px 4px;
+    font-weight: 700;
+  }
+  table.heatmap th.row-label { text-align: left; width: 38%; }
+  table.heatmap td {
+    text-align: center;
+    padding: 8px 4px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    background: #f3f4f6;
+    color: var(--muted);
+  }
+  table.heatmap td.label {
+    background: transparent;
+    text-align: left;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 13px;
+    padding-left: 0;
+  }
+  table.heatmap td.cell-empty { color: #cbd5e1; }
+  table.heatmap td.cell-pos-strong { background: #15803d; color: white; }
+  table.heatmap td.cell-pos-med    { background: #86efac; color: #14532d; }
+  table.heatmap td.cell-pos-weak   { background: #d1fae5; color: #14532d; }
+  table.heatmap td.cell-neg-weak   { background: #fee2e2; color: #7f1d1d; }
+  table.heatmap td.cell-neg-med    { background: #fca5a5; color: #7f1d1d; }
+  table.heatmap td.cell-neg-strong { background: #b91c1c; color: white; }
+  table.heatmap td.cell-zero      { background: #e5e7eb; color: var(--muted); }
+
+  /* Period-total channel tables */
+  table.channels-totals {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    font-size: 13px;
+  }
+  table.channels-totals th, table.channels-totals td {
+    text-align: right;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  table.channels-totals th.lbl, table.channels-totals td.lbl { text-align: left; }
+  table.channels-totals th {
+    background: #f5f1e8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  table.channels-totals tr:last-child td { border-bottom: none; }
+  table.channels-totals td.romi-pos { color: var(--good); font-weight: 700; }
+  table.channels-totals td.romi-neg { color: var(--bad);  font-weight: 700; }
+  table.channels-totals tr.row-total {
+    background: #fafaf5;
+    font-weight: 700;
+  }
+  table.channels-totals tr.row-total td { border-top: 2px solid var(--line); }
+
+  .footer {
+    padding: 30px 80px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  @media print {
+    .toc { display: none; }
+    .slide { page-break-after: always; min-height: auto; padding: 30px 40px; }
+    body { background: white; }
+  }
+  @media (max-width: 900px) {
+    .slide { padding: 30px 24px; }
+    .row, .row-3 { grid-template-columns: 1fr; gap: 20px; }
+    h1 { font-size: 32px; } h2 { font-size: 26px; }
+    .kpi { font-size: 40px; }
+    .toc { display: none; }
+    .action-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOC -->
+<details class="toc" id="toc">
+  <summary aria-label="Навигация"></summary>
+  <div class="toc-panel">
+    <div class="toc-title">Навигация</div>
+    <a href="#s1">1. Обзор</a>
+    <a href="#s2">2. Две истории</a>
+    <a href="#s3">3. Audrey: что произошло</a>
+    <a href="#s4">4. Audrey: почему</a>
+    <a href="#s5">5. Audrey: «Выводим»</a>
+    <a href="#s6">6. Ruby: что произошло</a>
+    <a href="#s7">7. Ruby: почему</a>
+    <a href="#s8">8. Воронка</a>
+    <a href="#s9">9. ROMI каналов</a>
+    <a href="#s9b">9b. Итоги по каналам</a>
+    <a href="#s9c">9c. Расход vs маржа</a>
+    <a href="#s10">10. План действий</a>
+  </div>
+</details>
+
+<!-- =================== SLIDE 1: COVER =================== -->
+<section class="slide" id="s1">
+  <div class="slide-num">RNP-отчёт · WB · 20 апреля — 10 мая 2026</div>
+  <h1>Audrey и&nbsp;Ruby:<br>динамика 3 недель</h1>
+  <p class="lead">Период разбит на три недели. Сравнение неделя&nbsp;к&nbsp;неделе показывает,
+    что работает, а&nbsp;что нет — и&nbsp;каждый рычаг&nbsp;уже&nbsp;проверен&nbsp;данными.</p>
+
+  <div class="trio" style="max-width: 900px; margin-top: 40px;">
+    <div class="week-box">
+      <div class="lbl">Неделя 1</div>
+      <div class="num">20–26 апр</div>
+    </div>
+    <div class="week-box">
+      <div class="lbl">Неделя 2</div>
+      <div class="num">27 апр – 3 мая</div>
+    </div>
+    <div class="week-box">
+      <div class="lbl">Неделя 3</div>
+      <div class="num">4–10 мая</div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top: 50px;">
+    <div class="card audrey-card">
+      <div class="kpi-label">Audrey · маржа</div>
+      <div class="kpi audrey">+207%</div>
+      <div class="kpi-delta good">53 → 111 → 163 тыс ₽ — рост каждую неделю</div>
+    </div>
+    <div class="card ruby-card">
+      <div class="kpi-label">Ruby · маржа</div>
+      <div class="kpi ruby">U-образно</div>
+      <div class="kpi-delta">164 → 99 → 122 тыс ₽ — яма в Н2, возврат в Н3</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 2: TWO STORIES =================== -->
+<section class="slide" id="s2">
+  <div class="slide-num">02 · Главный итог</div>
+  <h2>Две модели — два сценария</h2>
+
+  <div class="chart-wrap">
+    <h4>Маржа в ₽ по неделям</h4>
+    <canvas id="ch-margin"></canvas>
+  </div>
+
+  <div class="row" style="margin-top: 16px;">
+    <div class="card audrey-card">
+      <h3 class="audrey">Audrey: маржа растёт, но есть «канал-присоска»</h3>
+      <p>Маржа удвоилась за период (53 → 163 тыс ₽). ВК-подрядчик стабильно
+      окупается (<strong>ROMI +80% за период</strong>), внутренняя реклама
+      тоже (ROMI +40%).</p>
+      <p>Но <strong>Яндекс-подрядчик 3 недели подряд в минусе</strong>
+      (ROMI −67%, прибыль −48 тыс ₽), и его бюджет НЕ сокращали —
+      29 тыс&nbsp;₽/нед текут без возврата. Главное действие — остановить
+      Яндекс и перенести бюджет в работающие каналы.</p>
+    </div>
+    <div class="card ruby-card">
+      <h3 class="ruby">Ruby: блогеры съели маржу в Н2, маленькие бюджеты дали отдачу</h3>
+      <p>В Н2 блогерский бюджет 28 тыс ₽ дал <strong>0 заказов</strong> →
+      прибыль −28 тыс ₽. Маржа рухнула с 164 до 99 тыс ₽.</p>
+      <p>В Н3 блогеров отключили. ВК-подрядчик (10 тыс ₽) дал
+      <strong>ROMI +63%</strong>; внутренняя реклама при сокращении бюджета
+      с 26 до 10 тыс ₽ перешла из минуса в <strong>ROMI +97%</strong>.
+      Посевы ВК на 1 тыс ₽ за период дали <strong>ROMI +270%</strong>.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 3: AUDREY — WHAT HAPPENED =================== -->
+<section class="slide" id="s3">
+  <div class="slide-num">03 · Audrey</div>
+  <h2 class="audrey">Что произошло с Audrey</h2>
+
+  <div class="row">
+    <div>
+      <div class="trio">
+        <div class="week-box">
+          <div class="lbl">Н1 · маржа</div>
+          <div class="num audrey">53</div>
+          <div class="lbl">тыс ₽ · 6.6%</div>
+        </div>
+        <div class="week-box">
+          <div class="lbl">Н2 · маржа</div>
+          <div class="num audrey">111</div>
+          <div class="lbl">тыс ₽ · 11.4%</div>
+        </div>
+        <div class="week-box">
+          <div class="lbl">Н3 · маржа</div>
+          <div class="num audrey">163</div>
+          <div class="lbl">тыс ₽ · 16.8%</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <h4>Заказы vs Маржа · Audrey</h4>
+        <canvas id="ch-audrey-orders-margin"></canvas>
+      </div>
+    </div>
+
+    <div>
+      <h3>Маржа растёт, но не везде по правильным причинам</h3>
+      <p>В Н3 заказы упали на&nbsp;<strong>25%</strong> (с&nbsp;689 до&nbsp;517),
+        но маржа выросла на&nbsp;<strong>+52&nbsp;тыс&nbsp;₽</strong>. Это сочетание
+        двух разных факторов:</p>
+      <div class="arrow-flow">
+        <div class="step">ВК-подрядчик ROMI +228%</div>
+        <div class="arrow">→</div>
+        <div class="step">+7 тыс ₽ прибыли на 3 тыс расхода</div>
+      </div>
+      <div class="arrow-flow">
+        <div class="step">CR корзина→заказ 9.4% → 15.2%</div>
+        <div class="arrow">→</div>
+        <div class="step">оставшиеся клики покупают</div>
+      </div>
+      <p>Но <strong class="bad">Яндекс-подрядчик</strong> работает в минус
+      все 3 недели (прибыль −7 / −24 / −19 тыс ₽). Маржа выросла «вопреки»
+      этому каналу, не благодаря.</p>
+
+      <div class="hyp">
+        <div class="hyp-label">Гипотеза</div>
+        Главный рычаг — не «сокращать рекламу», а перераспределить:
+        остановить Яндекс-подрядчика (ROMI устойчиво отрицательный)
+        и направить освободившиеся 29 тыс ₽/нед в ВК-подрядчика (ROMI +80%
+        за период) и Посевы ВК. См. секцию 9.
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 4: AUDREY — WHY (ROMI-based) =================== -->
+<section class="slide" id="s4">
+  <div class="slide-num">04 · Audrey</div>
+  <h2 class="audrey">Главный вопрос: ROMI каналов</h2>
+
+  <div class="row">
+    <div class="chart-wrap">
+      <h4>ROMI по неделям · ВК-подрядчик vs Яндекс-подрядчик</h4>
+      <canvas id="ch-audrey-romi"></canvas>
+    </div>
+    <div>
+      <h3>Бюджеты направлены не туда</h3>
+      <p>За 21 день Audrey-Продаётся потратил почти одинаково на оба
+      внешних канала: <strong>ВК 65 тыс&nbsp;₽</strong> vs
+      <strong>Яндекс 71 тыс&nbsp;₽</strong>. Но результат —
+      противоположный:</p>
+
+      <table style="margin: 12px 0;">
+        <tr><th>Канал</th><th class="num-cell">Расход</th><th class="num-cell">Прибыль</th><th class="num-cell">ROMI</th></tr>
+        <tr><td class="audrey"><strong>ВК-подрядчик</strong></td><td class="num-cell">65 460 ₽</td><td class="num-cell good">+52 460 ₽</td><td class="num-cell good"><strong>+80.1%</strong></td></tr>
+        <tr><td class="ruby"><strong>Яндекс-подрядчик</strong></td><td class="num-cell">71 245 ₽</td><td class="num-cell bad">−47 661 ₽</td><td class="num-cell bad"><strong>−66.9%</strong></td></tr>
+      </table>
+
+      <div class="hyp">
+        <div class="hyp-label">Гипотеза</div>
+        Остановить Яндекс-подрядчика (~29 тыс ₽/нед, ROMI устойчиво
+        −54…−82% во все 3 недели). Освободившиеся 71 тыс ₽ за период
+        перенести в ВК-подрядчика и Посевы ВК — каналы со стабильно
+        положительным ROMI. Ожидаемый эффект:
+        <strong>+25–35 тыс ₽ прибыли за 21 день</strong>.
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top: 16px;">
+    <div class="what-works">
+      <strong class="good">✓ Что работает на Audrey</strong>
+      <ul style="margin: 8px 0 0;">
+        <li><strong>ВК-подрядчик окупается во все 3 недели:</strong>
+            ROMI +85% → +51% → <strong>+228%</strong>. В Н3 при бюджете
+            всего 3 тыс ₽ канал дал 24 заказа — отдача на единицу расхода рекордная.</li>
+        <li><strong>Внутр. реклама:</strong> ROMI +31% → +27% → +34%,
+            CPC снижается (11&nbsp;→&nbsp;10&nbsp;→&nbsp;9&nbsp;₽), CTR удерживается на 2.4–2.7%.</li>
+        <li><strong>Посевы ВК Н1:</strong> 437 ₽ → 10 заказов → +4 092 ₽ прибыли
+            (ROMI +937%). Маленький канал с отличной механикой.</li>
+      </ul>
+    </div>
+    <div class="what-fails">
+      <strong class="bad">✗ Что не работает</strong>
+      <ul style="margin: 8px 0 0;">
+        <li><strong>Яндекс-подрядчик — канал-присоска.</strong> 71 тыс ₽ расхода,
+            51 заказ, прибыль −48 тыс ₽. ROMI стабильно отрицательный 3 недели подряд.
+            Бюджет НЕ сокращался: 14&nbsp;→&nbsp;29&nbsp;→&nbsp;29 тыс&nbsp;₽.</li>
+        <li><strong>Блогеры:</strong> 37 тыс ₽ в Н1 → 2 заказа → прибыль −36 тыс ₽.
+            После отключения с Н2 — без видимых последствий.</li>
+        <li><strong>Посевы подрядчик:</strong> за период −1.4 тыс ₽ прибыли при
+            расходе 43 тыс ₽. Только Н2 был в плюс (+47% ROMI), Н1 и Н3 — в минус.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 5: AUDREY — VYVODIM =================== -->
+<section class="slide" id="s5">
+  <div class="slide-num">05 · Audrey · «Выводим»</div>
+  <h2 class="audrey">«Выводим» Audrey: −12 тыс ₽ маржи в Н2</h2>
+
+  <div class="row">
+    <div class="chart-wrap">
+      <h4>Маржа Audrey-«Выводим» по неделям, ₽</h4>
+      <canvas id="ch-audrey-vyvodim"></canvas>
+    </div>
+    <div>
+      <h3>В Н2 распродажа сломалась</h3>
+      <p>Заказы упали с&nbsp;65 до&nbsp;48, продажи в шт — с&nbsp;28 до&nbsp;20.
+      Комиссии и&nbsp;логистика «съели» всю выручку: маржа
+      ушла в&nbsp;<strong>−12&nbsp;065 ₽</strong>.</p>
+
+      <p>В&nbsp;Н3 маржа резко вернулась в&nbsp;плюс (+11&nbsp;808&nbsp;₽), но
+      это <em>бухгалтерский</em> эффект финализации старых заказов —
+      не повторяемая системная динамика.</p>
+
+      <div class="hyp">
+        <div class="hyp-label">Гипотеза</div>
+        Запустить управляемую распродажу Audrey-«Выводим» — снизить
+        цену до&nbsp;СПП на&nbsp;15–20% точечно на&nbsp;SKU с&nbsp;худшим соотношением
+        «остаток/продажи». Цель — не дать марже уйти в&nbsp;минус&nbsp;повторно.
+      </div>
+
+      <p class="muted" style="margin-top: 14px; font-size: 13px;">
+        Маржа на заказ: Н1&nbsp;−12&nbsp;₽ · Н2&nbsp;−251&nbsp;₽ · Н3&nbsp;+319&nbsp;₽
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 6: RUBY — WHAT HAPPENED =================== -->
+<section class="slide" id="s6">
+  <div class="slide-num">06 · Ruby</div>
+  <h2 class="ruby">Что произошло с Ruby</h2>
+
+  <div class="row">
+    <div>
+      <div class="trio">
+        <div class="week-box">
+          <div class="lbl">Н1 · маржа</div>
+          <div class="num ruby">164</div>
+          <div class="lbl">тыс ₽ · 15.9%</div>
+        </div>
+        <div class="week-box" style="background: #fff5f5; border-color: #fca5a5;">
+          <div class="lbl">Н2 · маржа ↓</div>
+          <div class="num bad">99</div>
+          <div class="lbl">тыс ₽ · 12.8%</div>
+        </div>
+        <div class="week-box">
+          <div class="lbl">Н3 · маржа</div>
+          <div class="num ruby">122</div>
+          <div class="lbl">тыс ₽ · 15.9%</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <h4>Заказы vs Маржа · Ruby</h4>
+        <canvas id="ch-ruby-orders-margin"></canvas>
+      </div>
+    </div>
+
+    <div>
+      <h3>Заказы падают линейно, маржа делает U</h3>
+      <p>Заказы каждую неделю: <strong>1 236 → 1 023 → 915</strong>.
+      Тренд устойчиво вниз, но темп падения замедляется.</p>
+
+      <p>Маржа делает U-образную яму с дном в Н2:
+      <strong class="bad">−65&nbsp;тыс&nbsp;₽</strong> за неделю.
+      Главная причина видна сразу — блогерский бюджет на «Продаётся»
+      Ruby: 17&nbsp;тыс → 28&nbsp;тыс ₽, заказов от блогеров: 3&nbsp;→&nbsp;0.</p>
+
+      <div class="arrow-flow">
+        <div class="step">Блогеры +10 тыс ₽</div>
+        <div class="arrow">→</div>
+        <div class="step">0 заказов</div>
+        <div class="arrow">→</div>
+        <div class="step">ДРР внешний ×2 (6%→12%)</div>
+        <div class="arrow">→</div>
+        <div class="step">Маржа −57 тыс ₽</div>
+      </div>
+
+      <div class="hyp">
+        <div class="hyp-label">Гипотеза</div>
+        Блогерский бюджет на Ruby в&nbsp;Н3 уже отключён. Не возвращать
+        ближайшие&nbsp;14&nbsp;дней. Прямая экономия 25–28&nbsp;тыс&nbsp;₽.
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 7: RUBY — WHY =================== -->
+<section class="slide" id="s7">
+  <div class="slide-num">07 · Ruby</div>
+  <h2 class="ruby">Почему так: блогеры провалились, ВК-подрядчик вырос</h2>
+
+  <div class="row">
+    <div class="chart-wrap">
+      <h4>Расход рекламы по каналам · Ruby</h4>
+      <canvas id="ch-ruby-ads"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <h4>ВК-подрядчик Ruby: бюджет vs CTR</h4>
+      <canvas id="ch-ruby-vk"></canvas>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top: 16px;">
+    <div class="what-works">
+      <strong class="good">✓ Что работает на Ruby</strong>
+      <ul style="margin: 8px 0 0;">
+        <li><strong>ВК-подрядчик прошёл прогрев:</strong> CTR 0%&nbsp;→&nbsp;0.64%&nbsp;→&nbsp;2.20%.
+            ROMI Н2 +58%, Н3 +63%. Стабильный плюс.</li>
+        <li><strong>Внутр. реклама стала прибыльной в Н3:</strong> при сокращении бюджета
+            с 26 до 10 тыс ₽ ROMI прыгнул с −5%/−2% (Н1/Н2) до +97% (Н3). CPC 21&nbsp;→&nbsp;19&nbsp;→&nbsp;18&nbsp;₽.</li>
+        <li><strong>Посевы ВК на микро-бюджете:</strong> 1 тыс ₽ за период → 12 заказов →
+            ROMI +270%. Потенциал масштабирования.</li>
+      </ul>
+    </div>
+    <div class="what-fails">
+      <strong class="bad">✗ Что не работает</strong>
+      <ul style="margin: 8px 0 0;">
+        <li><strong>Блогеры в Н1 и Н2:</strong> 45 тыс ₽ → 3 заказа → прибыль −44 тыс ₽.
+            В Н2 28 тыс ₽ дали 0 заказов. Однозначный стоп.</li>
+        <li><strong>Яндекс-подрядчик:</strong> 2.2 тыс ₽ за период → 0 заказов во все недели.
+            Бюджет маленький, но ROMI −100%.</li>
+        <li><strong>Посевы подрядчик:</strong> −3 тыс прибыли при расходе 7.4 тыс ₽ (ROMI −41%).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 8: FUNNEL =================== -->
+<section class="slide" id="s8">
+  <div class="slide-num">08 · Воронка</div>
+  <h2>Воронка: одна болезнь на двух моделях</h2>
+
+  <div class="row">
+    <div class="chart-wrap">
+      <h4>Конверсия корзина → заказ, % · обе модели</h4>
+      <canvas id="ch-funnel"></canvas>
+    </div>
+    <div>
+      <h3>Покупатель видит более высокую финальную цену</h3>
+      <p>СПП-скидка маркетплейса снижается на обеих моделях
+        каждую неделю:</p>
+      <ul>
+        <li><span class="audrey">Audrey:</span> 23.5% → 21.6% → 19.9% &nbsp; (<strong>−3.5&nbsp;п.п. за&nbsp;период</strong>)</li>
+        <li><span class="ruby">Ruby:</span> 22.6% → 20.6% → 19.3% &nbsp; (<strong>−3.3&nbsp;п.п. за&nbsp;период</strong>)</li>
+      </ul>
+      <p>Финальный чек (то, что видит покупатель) растёт:</p>
+      <ul>
+        <li><span class="audrey">Audrey:</span> 2 351 → 2 469 → 2 580 ₽ &nbsp; (<strong>+9.7% за период</strong>)</li>
+        <li><span class="ruby">Ruby:</span> 860 → 881 → 962 ₽ &nbsp; (<strong>+11.9% за период</strong>)</li>
+      </ul>
+      <div class="hyp">
+        <div class="hyp-label">Гипотеза</div>
+        Сейчас НЕ поднимать собственную цену до СПП — это удвоит давление
+        на конверсию. Дождаться возврата СПП-скидки маркетплейса.
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 9: AD DEEP-DIVE (heatmap + quadrant) =================== -->
+<section class="slide" id="s9">
+  <div class="slide-num">09 · Рекламные каналы — глубокий разбор</div>
+  <h2>Все каналы × недели × ROMI</h2>
+  <p class="lead" style="margin-bottom: 24px;">
+    Сводный взгляд: для каждого канала видно расход, клики, прогнозные
+    заказы, прогнозную маржу и&nbsp;ROMI по&nbsp;неделям. Цвет ячейки кодирует
+    окупаемость — зелёный/красный по&nbsp;ROMI.
+  </p>
+
+  <!-- ROMI heatmap (CSS grid) -->
+  <div class="row">
+    <div class="chart-wrap">
+      <h4>ROMI · Audrey</h4>
+      <table class="heatmap" id="hm-audrey"></table>
+    </div>
+    <div class="chart-wrap">
+      <h4>ROMI · Ruby</h4>
+      <table class="heatmap" id="hm-ruby"></table>
+    </div>
+  </div>
+
+</section>
+
+<!-- =================== SLIDE 9b: PERIOD TOTALS TABLE =================== -->
+<section class="slide" id="s9b">
+  <div class="slide-num">09b · Итог за 21 день</div>
+  <h2>Что окупилось, а что нет — за весь период</h2>
+
+  <div class="row" style="gap: 30px;">
+    <div>
+      <h3 class="audrey" style="margin-top: 0;">Audrey · итоги за 21 день</h3>
+      <table class="channels-totals" id="tt-audrey"></table>
+    </div>
+    <div>
+      <h3 class="ruby" style="margin-top: 0;">Ruby · итоги за 21 день</h3>
+      <table class="channels-totals" id="tt-ruby"></table>
+    </div>
+  </div>
+
+  <div class="row-3" style="margin-top: 30px;">
+    <div class="card" style="border-top: 4px solid var(--good);">
+      <h3 style="margin-top:0;">✓ Однозначно работает</h3>
+      <p><strong class="audrey">ВК-подрядчик</strong>:
+      Audrey ROMI <strong>+80%</strong> (прибыль +52 тыс), Ruby ROMI
+      <strong>+57%</strong> с Н2 (прибыль +7 тыс). На Audrey-Н3 ROMI
+      рекордный <strong>+228%</strong> на бюджете 3 тыс ₽.</p>
+      <p><strong>Внутр. реклама</strong> Audrey: ROMI <strong>+40%</strong>
+      стабильно. Ruby: <strong>+97%</strong> в Н3 при сокращении бюджета.</p>
+      <p><strong>Посевы ВК Ruby</strong>: бюджет 1 тыс ₽ → 12 заказов →
+      прибыль +2.7 тыс. ROMI <strong>+270%</strong> — лучший канал по
+      эффективности на единицу.</p>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--gold);">
+      <h3 style="margin-top:0;">~ Иногда работает</h3>
+      <p><strong>Посевы ВК Audrey</strong>: Н1 ROMI +937% (10 заказов на 437 ₽),
+      Н2 −46%, Н3 −2%. Маленький канал с очень разной отдачей.</p>
+      <p><strong>Посевы подрядчик Audrey</strong>: в Н2 ROMI +47%,
+      в Н1 −26%, в Н3 −20%. Зависит от конкретных кампаний.</p>
+      <p class="muted" style="font-size: 12px;">Здесь нужна выборочная проверка
+      каждой кампании, не валом — экономика непредсказуемая.</p>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--bad);">
+      <h3 style="margin-top:0;">✗ Не работает</h3>
+      <p><strong class="ruby">Яндекс-подрядчик Audrey</strong>: 71 тыс ₽ за период,
+      прибыль <strong>−48 тыс ₽</strong>, ROMI −67%. 3 недели подряд в минусе.</p>
+      <p><strong class="ruby">Яндекс-подрядчик Ruby</strong>: 2.2 тыс ₽ →
+      <strong>0 заказов</strong> во все 3 недели. ROMI −100%.</p>
+      <p><strong class="ruby">Блогеры</strong>: Audrey −36 тыс ₽ (ROMI −98%),
+      Ruby −45 тыс ₽ (ROMI −98%). На обеих моделях — однозначно стоп.</p>
+      <p><strong>Посевы подрядчик Ruby</strong>: −3 тыс ₽ за период, ROMI −41%.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =================== SLIDE 9c: SPEND vs RESULT FLOW =================== -->
+<section class="slide" id="s9c">
+  <div class="slide-num">09c · Связь расхода и результата</div>
+  <h2>Где рекламные деньги превращаются в маржу, а где — нет</h2>
+
+  <div class="row" style="gap: 30px;">
+    <div class="chart-wrap">
+      <h4>Audrey · расход vs прогнозная маржа (по каналам, итог за 21 день)</h4>
+      <canvas id="ch-spend-margin-audrey"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <h4>Ruby · расход vs прогнозная маржа (по каналам, итог за 21 день)</h4>
+      <canvas id="ch-spend-margin-ruby"></canvas>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; padding: 20px 24px; background: #fff8e6; border-radius: 12px; border-left: 4px solid var(--gold);">
+    <h3 style="margin: 0 0 8px;">Главный вывод по каналам</h3>
+    <p style="margin: 0;">
+      Где разница между прогнозной маржой и расходом <strong>положительная</strong> —
+      канал зарабатывает: внутренняя реклама на обеих моделях, ВК-подрядчик на Audrey,
+      посевы подрядчика на Audrey. Где разница <strong>отрицательная</strong> —
+      канал «съедает» рекламный рубль и не возвращает: Яндекс-подрядчик на Audrey,
+      блогеры на обеих моделях. Перераспределение из «съедающих» в «зарабатывающие»
+      даёт прямой рост маржи без увеличения общего бюджета.
+    </p>
+  </div>
+</section>
+
+
+<!-- =================== SLIDE 10: ACTION PLAN =================== -->
+<section class="slide" id="s10">
+  <div class="slide-num">10 · План действий</div>
+  <h2>5 действий с измеримым эффектом</h2>
+
+  <div class="action-row">
+    <div class="num">1</div>
+    <div>
+      <div class="title audrey">Audrey: остановить Яндекс-подрядчика полностью</div>
+      <div class="est">71 тыс ₽ за 21 день → прибыль −48 тыс ₽, ROMI −54…−82% во все 3 недели. Прямая экономия 48 тыс ₽/мес</div>
+    </div>
+    <div class="tag tag-margin">Маржа</div>
+    <div class="effect good">+16 тыс ₽/нед</div>
+    <div class="est">Уверенно, запуск за день</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">2</div>
+    <div>
+      <div class="title audrey">Audrey: вернуть ВК-подрядчика на 15–20 тыс ₽/нед</div>
+      <div class="est">Канал стабильно прибыльный (ROMI +85%/+51%/+228%). В Н3 урезали слишком сильно (3 тыс). Перенаправить деньги от Яндекса</div>
+    </div>
+    <div class="tag tag-ads">Реклама</div>
+    <div class="effect good">+10–15 тыс ₽/нед</div>
+    <div class="est">Уверенно, запуск за день</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">3</div>
+    <div>
+      <div class="title ruby">Ruby: НЕ возвращать бюджет внутр. рекламы к уровню Н1</div>
+      <div class="est">При 26 тыс ₽/нед (Н1, Н2) ROMI был −5% и −2%. При 10 тыс ₽/нед (Н3) — ROMI +97%. Текущая конфигурация оптимальна</div>
+    </div>
+    <div class="tag tag-margin">Маржа</div>
+    <div class="effect good">сохранение +10 тыс ₽/нед</div>
+    <div class="est">Уверенно, запуск за день</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">4</div>
+    <div>
+      <div class="title ruby">Ruby: продолжить ВК-подрядчика на 10–15 тыс ₽/нед</div>
+      <div class="est">Н2 +58% ROMI, Н3 +63% ROMI. Прогрев завершён, канал стабилен</div>
+    </div>
+    <div class="tag tag-ads">Реклама</div>
+    <div class="effect good">+6–10 тыс ₽/нед</div>
+    <div class="est">Уверенно, запуск за день</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">5</div>
+    <div>
+      <div class="title ruby">Ruby: масштабировать Посевы ВК с 0.5 до 3 тыс ₽/нед</div>
+      <div class="est">Микро-канал, но ROMI +161% (Н1) и +337% (Н2). Аккуратное масштабирование с контролем CPO</div>
+    </div>
+    <div class="tag tag-ads">Реклама</div>
+    <div class="effect good">+5–8 тыс ₽/нед</div>
+    <div class="est">Уверенно, неделя на проверку</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">6</div>
+    <div>
+      <div class="title">Обе модели: закрепить остановку блогеров</div>
+      <div class="est">Audrey −36 тыс прибыли за период (ROMI −98%); Ruby −45 тыс (ROMI −98%). Подтвердить, что бюджет = 0 на месяц минимум</div>
+    </div>
+    <div class="tag tag-margin">Маржа</div>
+    <div class="effect good">экономия 27 тыс ₽/нед</div>
+    <div class="est">Уверенно, запуск за день</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">7</div>
+    <div>
+      <div class="title audrey">Audrey: распродажа «Выводим»</div>
+      <div class="est">Снизить цену до СПП на 15–20% точечно на низкооборачиваемых SKU. Н2 показал минусовую маржу −12 тыс ₽</div>
+    </div>
+    <div class="tag tag-turn">Оборачиваемость</div>
+    <div class="effect good">предотвратить −12 тыс ₽/нед</div>
+    <div class="est">Уверенно, запуск за день</div>
+  </div>
+
+  <div style="margin-top: 32px; padding: 20px 24px; background: #fff8e6; border-radius: 12px; border-left: 4px solid var(--gold);">
+    <strong>Суммарный ожидаемый эффект:</strong> около <strong>+50–60 тыс ₽ прибыли в неделю</strong>
+    за счёт перераспределения (Audrey: Яндекс→ВК +16 тыс/нед + закрепление ВК эффективности +10 тыс/нед;
+    Ruby: удержание текущей конфигурации внутр. рекламы +10 тыс/нед + ВК +8 тыс/нед +
+    Посевы ВК +5 тыс/нед) при <strong>отсутствии увеличения общего бюджета</strong>.
+    Главный принцип — деньги от убыточных каналов (Яндекс, блогеры) переходят в окупаемые
+    (ВК-подрядчик, Посевы ВК). Все действия запускаются за день, риски ограничены откатом за день.
+  </div>
+</section>
+
+<div class="footer">
+  Данные: БД Wildberries (abc_date, orders, content_analysis, wb_adv, stocks, ms_stocks) ·
+  Google-таблицы «Реклама&nbsp;ВК» и&nbsp;«Блогеры» · снимок 13&nbsp;мая&nbsp;2026,&nbsp;11:43&nbsp;МСК ·
+  Версия скилла: rnp-report v1.6, схема 1.1.0
+</div>
+
+<script>
+// ============== TOC auto-collapse ==============
+(function() {
+  const toc = document.getElementById('toc');
+  if (!toc) return;
+  // Close when clicking a link inside
+  toc.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    setTimeout(() => toc.removeAttribute('open'), 150);
+  }));
+  // Close when clicking outside
+  document.addEventListener('click', e => {
+    if (toc.hasAttribute('open') && !toc.contains(e.target)) {
+      toc.removeAttribute('open');
+    }
+  });
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') toc.removeAttribute('open');
+  });
+})();
+
+// ============== Chart.js global config ==============
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", "PT Sans", sans-serif';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#1a1a2e';
+Chart.defaults.plugins.legend.position = 'top';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.padding = 14;
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(26, 26, 46, 0.95)';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+
+const WEEKS = ['Н1 (20–26 апр)', 'Н2 (27 апр–3 май)', 'Н3 (4–10 мая)'];
+
+// ============== Slide 2: margin trends ==============
+new Chart(document.getElementById('ch-margin'), {
+  type: 'line',
+  data: {
+    labels: WEEKS,
+    datasets: [{
+      label: 'Audrey',
+      data: [53165, 110933, 162555],
+      borderColor: '#0f766e', backgroundColor: '#d9f0ed',
+      borderWidth: 3, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#0f766e', fill: true,
+    }, {
+      label: 'Ruby',
+      data: [163894, 99231, 122139],
+      borderColor: '#b91c1c', backgroundColor: '#fde2e2',
+      borderWidth: 3, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#b91c1c', fill: true,
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: { y: { ticks: { callback: v => (v/1000).toFixed(0) + ' тыс ₽' } } },
+  },
+});
+
+// ============== Slide 3: Audrey orders + margin (dual axis) ==============
+new Chart(document.getElementById('ch-audrey-orders-margin'), {
+  data: {
+    labels: WEEKS,
+    datasets: [{
+      type: 'bar', label: 'Заказы, шт',
+      data: [577, 689, 517],
+      backgroundColor: 'rgba(15, 118, 110, 0.25)', borderColor: '#0f766e', borderWidth: 1,
+      yAxisID: 'y',
+    }, {
+      type: 'line', label: 'Маржа, тыс ₽',
+      data: [53, 111, 163],
+      borderColor: '#b45309', backgroundColor: '#b45309', borderWidth: 3, tension: 0.3,
+      pointRadius: 6, yAxisID: 'y1',
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      y:  { position: 'left',  title: { display: true, text: 'Заказы' } },
+      y1: { position: 'right', title: { display: true, text: 'Маржа, тыс ₽' }, grid: { drawOnChartArea: false } },
+    },
+  },
+});
+
+// ============== Slide 4: Audrey ROMI by channel ==============
+new Chart(document.getElementById('ch-audrey-romi'), {
+  type: 'bar',
+  data: {
+    labels: WEEKS,
+    datasets: [
+      {
+        label: 'ВК-подрядчик · ROMI %',
+        data: [83.5, 38.8, 9.7],
+        backgroundColor: '#0f766e',
+        borderRadius: 6,
+      },
+      {
+        label: 'Яндекс-подрядчик · ROMI %',
+        data: [-50.3, -60.1, -56.4],
+        backgroundColor: '#b91c1c',
+        borderRadius: 6,
+      },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      y: { ticks: { callback: v => v + '%' }, suggestedMin: -80, suggestedMax: 100 },
+    },
+    plugins: {
+      tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y > 0 ? '+' : ''}${c.parsed.y.toFixed(1)}%` } },
+    },
+  },
+});
+
+// ============== Slide 5: Audrey Выводим margin ==============
+new Chart(document.getElementById('ch-audrey-vyvodim'), {
+  type: 'bar',
+  data: {
+    labels: WEEKS,
+    datasets: [{
+      label: 'Маржа Audrey-«Выводим», ₽',
+      data: [-785, -12065, 11808],
+      backgroundColor: ctx => ctx.parsed.y < 0 ? '#b91c1c' : '#15803d',
+      borderRadius: 6,
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } },
+  },
+});
+
+// ============== Slide 6: Ruby orders + margin ==============
+new Chart(document.getElementById('ch-ruby-orders-margin'), {
+  data: {
+    labels: WEEKS,
+    datasets: [{
+      type: 'bar', label: 'Заказы, шт',
+      data: [1236, 1023, 915],
+      backgroundColor: 'rgba(185, 28, 28, 0.25)', borderColor: '#b91c1c', borderWidth: 1,
+      yAxisID: 'y',
+    }, {
+      type: 'line', label: 'Маржа, тыс ₽',
+      data: [164, 99, 122],
+      borderColor: '#b45309', backgroundColor: '#b45309', borderWidth: 3, tension: 0.3,
+      pointRadius: 6, yAxisID: 'y1',
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      y:  { position: 'left',  title: { display: true, text: 'Заказы' } },
+      y1: { position: 'right', title: { display: true, text: 'Маржа, тыс ₽' }, grid: { drawOnChartArea: false } },
+    },
+  },
+});
+
+// ============== Slide 7: Ruby ad spend ==============
+new Chart(document.getElementById('ch-ruby-ads'), {
+  type: 'bar',
+  data: {
+    labels: WEEKS,
+    datasets: [
+      { label: 'Внутренняя', data: [26524, 20944, 10191], backgroundColor: '#0f766e' },
+      { label: 'ВК-подрядчик', data: [0, 1938, 9729], backgroundColor: '#0ea5e9' },
+      { label: 'Блогеры', data: [17550, 27905, 0], backgroundColor: '#b91c1c' },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { stacked: true },
+      y: { stacked: true, ticks: { callback: v => (v/1000).toFixed(0) + ' тыс' } },
+    },
+  },
+});
+
+// ============== Slide 7: Ruby VK budget vs CTR ==============
+new Chart(document.getElementById('ch-ruby-vk'), {
+  data: {
+    labels: WEEKS,
+    datasets: [{
+      type: 'bar', label: 'Бюджет ВК, ₽',
+      data: [0, 1938, 9729],
+      backgroundColor: 'rgba(14, 165, 233, 0.4)', borderColor: '#0ea5e9', borderWidth: 1,
+      yAxisID: 'y',
+    }, {
+      type: 'line', label: 'CTR, %',
+      data: [0, 0.64, 2.20],
+      borderColor: '#b45309', backgroundColor: '#b45309', borderWidth: 3, tension: 0.3,
+      pointRadius: 8, yAxisID: 'y1',
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      y:  { position: 'left',  title: { display: true, text: 'Бюджет, ₽' }, ticks: { callback: v => (v/1000).toFixed(0) + ' тыс' } },
+      y1: { position: 'right', title: { display: true, text: 'CTR, %' }, grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } },
+    },
+  },
+});
+
+// ============== Slide 8: Funnel CR for both ==============
+new Chart(document.getElementById('ch-funnel'), {
+  type: 'line',
+  data: {
+    labels: WEEKS,
+    datasets: [{
+      label: 'Audrey',
+      data: [12.38, 9.37, 15.20],
+      borderColor: '#0f766e', backgroundColor: 'rgba(15, 118, 110, 0.1)',
+      borderWidth: 3, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#0f766e', fill: false,
+    }, {
+      label: 'Ruby',
+      data: [31.31, 30.38, 27.83],
+      borderColor: '#b91c1c', backgroundColor: 'rgba(185, 28, 28, 0.1)',
+      borderWidth: 3, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#b91c1c', fill: false,
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: { y: { ticks: { callback: v => v + '%' } } },
+  },
+});
+
+// ============== Slide 9: AD CHANNEL DEEP-DIVE ==============
+
+// Pre-computed channel data (per model × channel × week) — из Google Sheets,
+// статус «Продаётся» (вся реклама работает в этом статусе; в «Выводим» расход = 0).
+// profit = forecast_margin_channel - cost; ROMI = profit / cost.
+const CHANNELS_DATA = {
+  Audrey: {
+    "Внутр. реклама":   { W1:{spend:58618,clicks:5319, orders:169,profit:17917, romi:0.306},
+                          W2:{spend:60181,clicks:5960, orders:181,profit:16383, romi:0.272},
+                          W3:{spend:40504,clicks:4605, orders:132,profit:13590, romi:0.336} },
+    "ВК-подрядчик":     { W1:{spend:16137,clicks:7383, orders:66, profit:13752, romi:0.852},
+                          W2:{spend:46320,clicks:20247,orders:165,profit:23475, romi:0.507},
+                          W3:{spend:3003, clicks:909,  orders:24, profit:6833,  romi:2.276} },
+    "Яндекс-подрядчик": { W1:{spend:13793,clicks:1709, orders:14, profit:-7453, romi:-0.540},
+                          W2:{spend:28607,clicks:3591, orders:12, profit:-23531,romi:-0.823},
+                          W3:{spend:28845,clicks:3466, orders:25, profit:-18600,romi:-0.645} },
+    "Блогеры":          { W1:{spend:37206,clicks:406,  orders:2,  profit:-36300,romi:-0.976},
+                          W2:{spend:0,    clicks:0,    orders:0,  profit:0,     romi:null},
+                          W3:{spend:0,    clicks:0,    orders:0,  profit:0,     romi:null} },
+    "Посевы ВК":        { W1:{spend:437,  clicks:12,   orders:10, profit:4092,  romi:9.368},
+                          W2:{spend:4700, clicks:855,  orders:6,  profit:-2162, romi:-0.460},
+                          W3:{spend:840,  clicks:16,   orders:2,  profit:-20,   romi:-0.024} },
+    "Посевы подрядчик": { W1:{spend:21946,clicks:4956, orders:36, profit:-5643, romi:-0.257},
+                          W2:{spend:8331, clicks:3698, orders:29, profit:3936,  romi:0.472},
+                          W3:{spend:12739,clicks:4177, orders:25, profit:-2494, romi:-0.196} },
+  },
+  Ruby: {
+    "Внутр. реклама":   { W1:{spend:26524,clicks:1284, orders:86, profit:-1402, romi:-0.053},
+                          W2:{spend:20944,clicks:1105, orders:67, profit:-461,  romi:-0.022},
+                          W3:{spend:10191,clicks:556,  orders:62, profit:9851,  romi:0.967} },
+    "ВК-подрядчик":     { W1:{spend:0,    clicks:0,    orders:0,  profit:0,     romi:null},
+                          W2:{spend:1938, clicks:202,  orders:10, profit:1119,  romi:0.577},
+                          W3:{spend:9729, clicks:5304, orders:49, profit:6111,  romi:0.628} },
+    "Яндекс-подрядчик": { W1:{spend:907,  clicks:97,   orders:0,  profit:-907,  romi:-1.000},
+                          W2:{spend:616,  clicks:89,   orders:0,  profit:-616,  romi:-1.000},
+                          W3:{spend:722,  clicks:83,   orders:0,  profit:-722,  romi:-1.000} },
+    "Блогеры":          { W1:{spend:17550,clicks:528,  orders:3,  profit:-16674,romi:-0.950},
+                          W2:{spend:27905,clicks:513,  orders:0,  profit:-27905,romi:-1.000},
+                          W3:{spend:0,    clicks:0,    orders:0,  profit:0,     romi:null} },
+    "Посевы ВК":        { W1:{spend:448,  clicks:22,   orders:4,  profit:720,   romi:1.608},
+                          W2:{spend:560,  clicks:38,   orders:8,  profit:1886,  romi:3.367},
+                          W3:{spend:0,    clicks:0,    orders:0,  profit:0,     romi:null} },
+    "Посевы подрядчик": { W1:{spend:3365, clicks:333,  orders:7,  profit:-1320, romi:-0.392},
+                          W2:{spend:0,    clicks:1,    orders:2,  profit:611,   romi:null},
+                          W3:{spend:4028, clicks:194,  orders:5,  profit:-2412, romi:-0.599} },
+  },
+};
+
+function romiCell(romi) {
+  if (romi === null || romi === undefined) return { cls: 'cell-empty', txt: '—' };
+  const pct = romi * 100;
+  let cls;
+  if (pct >= 50)        cls = 'cell-pos-strong';
+  else if (pct >= 20)   cls = 'cell-pos-med';
+  else if (pct > 0)     cls = 'cell-pos-weak';
+  else if (pct >= -20)  cls = 'cell-neg-weak';
+  else if (pct >= -50)  cls = 'cell-neg-med';
+  else                  cls = 'cell-neg-strong';
+  return { cls, txt: (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%' };
+}
+
+function fmt(n, suffix) {
+  if (n === null || n === undefined) return '—';
+  const s = Math.round(n).toLocaleString('ru-RU').replace(/,/g, ' ');
+  return suffix ? `${s} ${suffix}` : s;
+}
+
+function buildHeatmap(elId, modelKey) {
+  const t = document.getElementById(elId);
+  const data = CHANNELS_DATA[modelKey];
+  let html = '<thead><tr><th class="row-label">Канал</th><th>Н1</th><th>Н2</th><th>Н3</th></tr></thead><tbody>';
+  Object.keys(data).forEach(ch => {
+    const w1 = romiCell(data[ch].W1.romi);
+    const w2 = romiCell(data[ch].W2.romi);
+    const w3 = romiCell(data[ch].W3.romi);
+    const titleFor = (week, channel) => {
+      const d = data[channel][week];
+      return `${channel} · ${week}: расход ${fmt(d.spend,'₽')}, заказы ${fmt(d.orders)}, прибыль ${fmt(d.profit,'₽')}`;
+    };
+    html += `<tr><td class="label">${ch}</td>
+      <td class="${w1.cls}" title="${titleFor('W1', ch)}">${w1.txt}</td>
+      <td class="${w2.cls}" title="${titleFor('W2', ch)}">${w2.txt}</td>
+      <td class="${w3.cls}" title="${titleFor('W3', ch)}">${w3.txt}</td></tr>`;
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+buildHeatmap('hm-audrey', 'Audrey');
+buildHeatmap('hm-ruby',   'Ruby');
+
+// ===== Period totals tables =====
+function buildTotalsTable(elId, modelKey) {
+  const data = CHANNELS_DATA[modelKey];
+  let html = '<thead><tr><th class="lbl">Канал</th><th>Расход</th><th>Клики</th><th>Заказы</th><th>Прибыль</th><th>ROMI</th></tr></thead><tbody>';
+  let TSpend=0, TClicks=0, TOrders=0, TProfit=0;
+  Object.keys(data).forEach(ch => {
+    let spend=0, clicks=0, orders=0, profit=0;
+    for (const w of ['W1','W2','W3']) {
+      spend  += data[ch][w].spend;
+      clicks += data[ch][w].clicks;
+      orders += data[ch][w].orders;
+      profit += data[ch][w].profit;
+    }
+    if (spend === 0 && clicks === 0) return;
+    const romi = spend > 0 ? profit / spend : null;
+    const romiCls = romi === null ? '' : (romi >= 0 ? 'romi-pos' : 'romi-neg');
+    const romiTxt = romi === null ? '—' : (romi >= 0 ? '+' : '') + (romi * 100).toFixed(1) + '%';
+    const profitCls = profit >= 0 ? 'romi-pos' : 'romi-neg';
+    html += `<tr><td class="lbl">${ch}</td>
+      <td>${fmt(spend, '₽')}</td>
+      <td>${fmt(clicks)}</td>
+      <td>${fmt(orders)}</td>
+      <td class="${profitCls}">${fmt(profit, '₽')}</td>
+      <td class="${romiCls}">${romiTxt}</td></tr>`;
+    TSpend += spend; TClicks += clicks; TOrders += orders; TProfit += profit;
+  });
+  const totRomi = TSpend > 0 ? TProfit / TSpend : 0;
+  const totCls = totRomi >= 0 ? 'romi-pos' : 'romi-neg';
+  const totProfitCls = TProfit >= 0 ? 'romi-pos' : 'romi-neg';
+  html += `<tr class="row-total"><td class="lbl">Итого</td>
+    <td>${fmt(TSpend, '₽')}</td>
+    <td>${fmt(TClicks)}</td>
+    <td>${fmt(TOrders)}</td>
+    <td class="${totProfitCls}">${fmt(TProfit, '₽')}</td>
+    <td class="${totCls}">${(totRomi >= 0 ? '+' : '') + (totRomi * 100).toFixed(1)}%</td></tr>`;
+  html += '</tbody>';
+  document.getElementById(elId).innerHTML = html;
+}
+
+buildTotalsTable('tt-audrey', 'Audrey');
+buildTotalsTable('tt-ruby',   'Ruby');
+
+// ===== Spend vs profit bars (per channel, period totals) =====
+function spendMarginChart(canvasId, modelKey) {
+  const data = CHANNELS_DATA[modelKey];
+  const labels = [], spendArr = [], profitArr = [], profitColors = [];
+  Object.keys(data).forEach(ch => {
+    let spend=0, profit=0;
+    for (const w of ['W1','W2','W3']) { spend += data[ch][w].spend; profit += data[ch][w].profit; }
+    if (spend === 0) return;
+    labels.push(ch); spendArr.push(spend); profitArr.push(profit);
+    profitColors.push(profit >= 0 ? 'rgba(21, 128, 61, 0.75)' : 'rgba(185, 28, 28, 0.75)');
+  });
+  new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Расход, ₽', data: spendArr, backgroundColor: 'rgba(180, 83, 9, 0.7)', borderColor: '#b45309', borderWidth: 1 },
+        { label: 'Прибыль (прогноз), ₽', data: profitArr, backgroundColor: profitColors, borderColor: '#1a1a2e', borderWidth: 1 },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { ticks: { callback: v => (v/1000).toFixed(0) + ' тыс' } } },
+      plugins: {
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.x, '₽')}` } },
+      },
+    },
+  });
+}
+
+spendMarginChart('ch-spend-margin-audrey', 'Audrey');
+spendMarginChart('ch-spend-margin-ruby',   'Ruby');
+</script>
+
+</body>
+</html>
