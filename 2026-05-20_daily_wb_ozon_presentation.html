@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Ежедневный отчёт · 20.05.2026 · WB + Ozon</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#faf8f3; --ink:#1a1a2e; --muted:#6b7280; --line:#e5e1d6;
+    --wb:#0f766e; --ozon:#005bff; --gold:#b45309;
+    --good:#15803d; --bad:#b91c1c;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,"Segoe UI",sans-serif; font-size:16px; line-height:1.55; }
+  .slide { min-height:100vh; padding:60px 80px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; justify-content:center; max-width:1400px; margin:0 auto; }
+  .slide-num { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  h1 { font-size:48px; line-height:1.1; margin:0 0 16px; font-weight:800; }
+  h2 { font-size:36px; line-height:1.15; margin:0 0 24px; font-weight:700; }
+  h3 { font-size:22px; margin:24px 0 12px; font-weight:700; }
+  p { margin:0 0 14px; }
+  .lead { font-size:22px; line-height:1.4; max-width:1000px; }
+  .muted { color:var(--muted); }
+  .wb { color:var(--wb); } .ozon { color:var(--ozon); }
+  .good { color:var(--good); } .bad { color:var(--bad); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:30px; align-items:start; }
+  .row-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .card { background:white; border:1px solid var(--line); border-radius:12px; padding:24px 28px; box-shadow:0 2px 8px rgba(0,0,0,0.03); }
+  .card.wb-card { border-top:4px solid var(--wb); }
+  .card.ozon-card { border-top:4px solid var(--ozon); }
+  .card.plan-card { border-top:4px solid var(--gold); background:#fff8e6; }
+  .kpi { font-size:48px; line-height:1; font-weight:800; margin:8px 0 4px; }
+  .kpi-label { font-size:13px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); }
+  .kpi-delta { font-size:15px; margin-top:6px; font-weight:600; }
+  .chart-wrap { background:white; border:1px solid var(--line); border-radius:12px; padding:20px 24px; margin:12px 0; }
+  .chart-wrap h4 { margin:0 0 12px; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); font-weight:700; }
+  canvas { max-height:340px !important; }
+  .hyp { border-left:4px solid var(--gold); background:#fff8e6; padding:16px 22px; border-radius:0 8px 8px 0; margin:16px 0; }
+  .hyp-label { font-size:12px; text-transform:uppercase; letter-spacing:1.5px; color:var(--gold); font-weight:700; margin-bottom:4px; }
+  .what-works, .what-fails { padding:14px 20px; border-radius:10px; margin:12px 0; }
+  .what-works { background:#e7f5ed; border-left:4px solid var(--good); }
+  .what-fails { background:#fde2e2; border-left:4px solid var(--bad); }
+  .what-works strong, .what-fails strong { font-size:13px; text-transform:uppercase; letter-spacing:1px; }
+  table { width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden; border:1px solid var(--line); }
+  th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); font-size:14px; font-variant-numeric:tabular-nums; }
+  th { background:#f5f1e8; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
+  td.num-cell, th.num-cell { text-align:right; }
+  tr:last-child td { border-bottom:none; }
+  tr.highlight td { background:#fff8e6; font-weight:700; }
+  .toc { position:fixed; top:20px; right:20px; z-index:100; }
+  .toc summary { list-style:none; cursor:pointer; background:var(--ink); color:white; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 16px rgba(0,0,0,0.15); transition:all 0.25s ease; user-select:none; }
+  .toc summary:hover { background:var(--gold); transform:scale(1.05); }
+  .toc summary::-webkit-details-marker { display:none; }
+  .toc summary::before { content:'☰'; transition:transform 0.25s ease; }
+  .toc[open] summary { background:var(--gold); width:36px; height:36px; font-size:16px; }
+  .toc[open] summary::before { content:'✕'; }
+  .toc-panel { margin-top:10px; background:white; border:1px solid var(--line); border-radius:12px; padding:14px 18px; font-size:12px; box-shadow:0 4px 16px rgba(0,0,0,0.1); animation:slideIn 0.2s ease; max-width:240px; }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  .toc-title { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); font-weight:700; margin-bottom:6px; }
+  .toc a { display:block; color:var(--ink); text-decoration:none; padding:4px 0; }
+  .toc a:hover { color:var(--gold); }
+  .action-row { display:grid; grid-template-columns:50px 1fr 160px 200px; gap:16px; align-items:center; background:white; border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin:10px 0; }
+  .action-row .num { font-size:26px; font-weight:800; color:var(--gold); }
+  .action-row .effect { font-weight:700; font-size:15px; }
+  .action-row .est { font-size:13px; color:var(--muted); }
+  .progress-bar { height:36px; background:#f3f4f6; border-radius:8px; overflow:hidden; position:relative; margin:14px 0; }
+  .progress-bar .fill { height:100%; background:linear-gradient(90deg,#b45309,#d97706); display:flex; align-items:center; padding:0 14px; color:white; font-weight:700; font-size:14px; }
+  .progress-bar .target-mark { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); }
+  .footer { padding:30px 80px; color:var(--muted); font-size:12px; text-align:center; }
+  @media print { .toc { display:none; } .slide { page-break-after:always; min-height:auto; padding:30px 40px; } body { background:white; } }
+  @media (max-width:900px) { .slide { padding:30px 24px; } .row, .row-3 { grid-template-columns:1fr; } h1 { font-size:32px; } h2 { font-size:26px; } .toc { display:none; } .action-row { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<details class="toc" id="toc">
+  <summary aria-label="Навигация"></summary>
+  <div class="toc-panel">
+    <div class="toc-title">Навигация</div>
+    <a href="#s1">1. Обзор дня</a>
+    <a href="#s2">2. План май</a>
+    <a href="#s3">3. WB · 20.05</a>
+    <a href="#s4">4. Ozon · 20.05</a>
+    <a href="#s5">5. Динамика 9 дней</a>
+    <a href="#s6">6. Что сломалось</a>
+    <a href="#s7">7. План действий</a>
+  </div>
+</details>
+
+<!-- ========== SLIDE 1: COVER ========== -->
+<section class="slide" id="s1">
+  <div class="slide-num">Ежедневный отчёт · среда, 20 мая 2026</div>
+  <h1>Маржа дня: <span class="good">256.7&nbsp;тыс&nbsp;₽</span><br>План мая: <span class="bad">отстаём −5.4%</span></h1>
+  <p class="lead">День «как все»: WB просел на 7 тыс ₽ маржи (просадка
+    конверсии корзина→заказ), Ozon наоборот прибавил 2 тыс ₽ (на лаговых
+    выкупах). Объёмы заказов на уровне средней недели.</p>
+
+  <div class="row" style="margin-top: 40px;">
+    <div class="card wb-card">
+      <div class="kpi-label">WB · маржа 20.05</div>
+      <div class="kpi wb">231 915 ₽</div>
+      <div class="kpi-delta bad">−3.0% к 19.05</div>
+      <p class="muted" style="margin-top:14px;">1 107 заказов (+0.8%), 51 201 кликов (+10.1%),
+        но конверсия корзина→заказ просела на −2.4 п.п.</p>
+    </div>
+    <div class="card ozon-card">
+      <div class="kpi-label">Ozon · маржа 20.05</div>
+      <div class="kpi ozon">24 824 ₽</div>
+      <div class="kpi-delta good">+8.6% к 19.05</div>
+      <p class="muted" style="margin-top:14px;">101 заказ (−9.0%), но 51 продажа в шт (+27.5%) —
+        финализация заказов прошлых дней.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 2: PLAN ========== -->
+<section class="slide" id="s2">
+  <div class="slide-num">02 · План мая</div>
+  <h2>Отставание −5.4%, нужно +11% к темпу</h2>
+
+  <div class="row">
+    <div class="card plan-card">
+      <h3 style="margin-top:0;">Где мы сейчас</h3>
+      <div class="kpi-label">Маржа за 20 дней (факт)</div>
+      <div class="kpi" style="color:var(--gold);">4 778 120 ₽</div>
+      <div style="margin:14px 0;">
+        <div class="progress-bar">
+          <div class="fill" style="width:61%;">61% плана</div>
+          <div class="target-mark" style="left:64.5%;" title="64.5% — где должны были быть"></div>
+        </div>
+        <div style="font-size:12px; color:var(--muted);">↑ план должен быть на 64.5% (вертикальная метка) ·
+          разрыв = −272 818 ₽ (−5.4%)</div>
+      </div>
+      <table style="margin-top:10px;">
+        <tr><td>План на май</td><td class="num-cell">7 828 953 ₽</td></tr>
+        <tr><td>Ожидалось за 20 дней</td><td class="num-cell">5 050 938 ₽</td></tr>
+        <tr><td>Факт за 20 дней</td><td class="num-cell">4 778 120 ₽</td></tr>
+        <tr class="highlight"><td>Отставание</td><td class="num-cell bad">−272 818 ₽ (−5.4%)</td></tr>
+      </table>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0;">Что нужно сделать в оставшиеся 11 дней</h3>
+      <p>Чтобы выйти на план — каждый день до 31.05 закрывать
+        <strong>277 348 ₽ маржи</strong>. Это на <strong>+27.2 тыс ₽ выше</strong>
+        текущего темпа.</p>
+      <table>
+        <tr><th>Показатель</th><th class="num-cell">₽/день</th></tr>
+        <tr><td>Средний темп 12–20.05</td><td class="num-cell">250 160 ₽</td></tr>
+        <tr><td>Нужно для плана</td><td class="num-cell">277 348 ₽</td></tr>
+        <tr class="highlight"><td>Разрыв</td><td class="num-cell bad">+27 188 ₽ (+10.9%)</td></tr>
+      </table>
+      <div class="hyp">
+        <div class="hyp-label">Прогноз при сохранении темпа</div>
+        Маржа на 31.05 ≈ <strong>7 530 тыс ₽</strong> (−299 тыс к плану, −3.8%).
+        Чтобы догнать — рычаги в секции 7.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 3: WB ========== -->
+<section class="slide" id="s3">
+  <div class="slide-num">03 · Wildberries</div>
+  <h2 class="wb">WB · 20.05: воронка дала сбой</h2>
+
+  <div class="row">
+    <div>
+      <table>
+        <thead><tr><th>Метрика</th><th class="num-cell">20.05</th><th class="num-cell">19.05</th><th class="num-cell">Δ</th></tr></thead>
+        <tbody>
+          <tr><td>Заказы</td><td class="num-cell">1 107</td><td class="num-cell">1 098</td><td class="num-cell good">+0.8%</td></tr>
+          <tr><td>Выручка до СПП</td><td class="num-cell">1 977 453 ₽</td><td class="num-cell">2 010 663 ₽</td><td class="num-cell bad">−1.7%</td></tr>
+          <tr><td>Маржа</td><td class="num-cell">231 915 ₽</td><td class="num-cell">239 207 ₽</td><td class="num-cell bad">−3.0%</td></tr>
+          <tr><td>Маржинальность</td><td class="num-cell">20.5%</td><td class="num-cell">20.9%</td><td class="num-cell bad">−0.4 п.п.</td></tr>
+          <tr><td>Клики (всего)</td><td class="num-cell">51 201</td><td class="num-cell">46 491</td><td class="num-cell good">+10.1%</td></tr>
+          <tr><td>Корзины</td><td class="num-cell">3 570</td><td class="num-cell">3 287</td><td class="num-cell good">+8.6%</td></tr>
+          <tr class="highlight"><td><strong>Конверсия корзина→заказ</strong></td><td class="num-cell">31.0%</td><td class="num-cell">33.4%</td><td class="num-cell bad"><strong>−2.4 п.п.</strong></td></tr>
+          <tr><td>Заказы из внутр. рекл.</td><td class="num-cell">281</td><td class="num-cell">334</td><td class="num-cell bad">−15.9%</td></tr>
+          <tr><td>CPO внутр. рекл.</td><td class="num-cell">136 ₽</td><td class="num-cell">114 ₽</td><td class="num-cell bad">+19.6%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">Что произошло</h3>
+      <p>Верх воронки прибавил (клики +10%, корзины +9%) — людям интересно.
+        Но финализация просела: из корзины в заказ дошли на 2.4 п.п. меньше.</p>
+
+      <p>При сохранении вчерашней конверсии (33.4%) было бы +85 заказов и
+        ~<strong>+18 тыс ₽ маржи</strong> — это почти ровно разрыв до
+        плана дня.</p>
+
+      <div class="hyp">
+        <div class="hyp-label">Гипотеза</div>
+        Просадка конверсии — главная причина минусовой маржи дня.
+        Проверить ценовые движения и СПП на топ-5 SKU «Продаётся» —
+        вероятно, финальный чек подрос на 2-3%, и часть клиентов не
+        дошла до оплаты.
+      </div>
+
+      <h3>Структурный сдвиг</h3>
+      <p>«Продаётся» потерял 58 заказов (−12 тыс маржи), «Выводим»
+        прибавил 67 заказов (+4 тыс маржи). Покупатель уходит на скидки.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 4: OZON ========== -->
+<section class="slide" id="s4">
+  <div class="slide-num">04 · Ozon</div>
+  <h2 class="ozon">Ozon · 20.05: маржа выросла на лаговых выкупах</h2>
+
+  <div class="row">
+    <div>
+      <table>
+        <thead><tr><th>Метрика</th><th class="num-cell">20.05</th><th class="num-cell">19.05</th><th class="num-cell">Δ</th></tr></thead>
+        <tbody>
+          <tr><td>Заказы</td><td class="num-cell">101</td><td class="num-cell">111</td><td class="num-cell bad">−9.0%</td></tr>
+          <tr><td>Выручка до СПП</td><td class="num-cell">273 869 ₽</td><td class="num-cell">304 995 ₽</td><td class="num-cell bad">−10.2%</td></tr>
+          <tr class="highlight"><td><strong>Продажи в шт</strong></td><td class="num-cell">51</td><td class="num-cell">40</td><td class="num-cell good"><strong>+27.5%</strong></td></tr>
+          <tr><td>Выручка от продаж</td><td class="num-cell">120 450 ₽</td><td class="num-cell">110 218 ₽</td><td class="num-cell good">+9.3%</td></tr>
+          <tr class="highlight"><td><strong>Маржа</strong></td><td class="num-cell">24 824 ₽</td><td class="num-cell">22 851 ₽</td><td class="num-cell good"><strong>+8.6%</strong></td></tr>
+          <tr><td>Маржинальность</td><td class="num-cell">20.6%</td><td class="num-cell">20.7%</td><td class="num-cell">−0.1 п.п.</td></tr>
+          <tr><td>Выкуп %</td><td class="num-cell">54.7%</td><td class="num-cell">55.1%</td><td class="num-cell">−0.4 п.п.</td></tr>
+          <tr><td>Средний чек продаж до СПП</td><td class="num-cell">2 362 ₽</td><td class="num-cell">2 755 ₽</td><td class="num-cell bad">−14.3%</td></tr>
+          <tr><td>Расход рекламы</td><td class="num-cell">1 796 ₽</td><td class="num-cell">1 530 ₽</td><td class="num-cell">+17.4%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">Что произошло</h3>
+      <p>Заказы дня просели на −10 шт (−9%), но маржа выросла на +2 тыс ₽.
+        Это разрыв во времени:</p>
+      <ul>
+        <li><strong>Выкупы +27%</strong> — финализируются заказы
+          предыдущих дней, маржа поступает «постфактум»</li>
+        <li><strong>Средний чек продаж −14%</strong> — продаются более
+          дешёвые SKU, но компенсируется количеством</li>
+      </ul>
+
+      <div class="hyp">
+        <div class="hyp-label">Гипотеза</div>
+        Маржа дня выглядит хорошо благодаря лагу. Реальный риск —
+        падение заказов: если темп не вернётся к 17–18.05 уровню (105–110/день),
+        выкупы в следующие 2-3 дня тоже просядут.
+      </div>
+
+      <p class="muted" style="font-size:13px;">Реклама на Ozon — символическая
+        (1.8 тыс ₽/день), ДРР 0.66%. Это фактически нулевая рекламная нагрузка.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 5: DYNAMICS ========== -->
+<section class="slide" id="s5">
+  <div class="slide-num">05 · Динамика</div>
+  <h2>Маржа по дням, 12–20.05</h2>
+
+  <div class="chart-wrap">
+    <h4>Маржа по дням, ₽ · WB vs Ozon vs целевой темп</h4>
+    <canvas id="ch-daily-margin"></canvas>
+  </div>
+
+  <div class="row" style="margin-top:20px;">
+    <div class="chart-wrap">
+      <h4>WB · заказы vs рекламный расход по дням</h4>
+      <canvas id="ch-wb-orders-ads"></canvas>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">Паттерн рекламы WB</h3>
+      <p>Дни с рекламой <strong>выше 90 тыс ₽</strong> (12.05, 13.05, 15.05) — маржа на заказ
+        148–195 ₽. Дни с рекламой 35–50 тыс ₽ — маржа на заказ
+        <strong>218–242 ₽</strong>.</p>
+      <p>Перегретые рекламные дни не приносят пропорционального роста
+        заказов: 1 051–1 124 (с большой рекламой) vs 1 012–1 166 (с
+        умеренной). При этом маржа на заказ падает на четверть.</p>
+      <div class="hyp">
+        <div class="hyp-label">Вывод</div>
+        Установить дневной потолок рекламы WB на 60 тыс ₽. Экономия
+        потенциально 7 тыс ₽ маржи в дни с перегревом.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 6: ISSUES ========== -->
+<section class="slide" id="s6">
+  <div class="slide-num">06 · Сигналы тревоги</div>
+  <h2>Три сигнала, которые нельзя оставить без действия</h2>
+
+  <div class="row-3">
+    <div class="what-fails">
+      <strong class="bad">Сигнал 1 (extreme)</strong>
+      <h3 style="margin-top:8px;">Конверсия корзина→заказ WB</h3>
+      <p style="font-size:24px; font-weight:800; margin:8px 0;">
+        <span class="bad">31.0%</span>
+        <span style="font-size:14px; color:var(--muted);">↓ с 33.4%</span>
+      </p>
+      <p style="margin:0; font-size:14px;">Нижняя точка за 9 дней. Каждые 0.5 п.п. конверсии
+        при текущем объёме корзин = +18 заказов = +4 тыс ₽ маржи в день.</p>
+    </div>
+    <div class="what-fails">
+      <strong class="bad">Сигнал 2 (high)</strong>
+      <h3 style="margin-top:8px;">Структурный сдвиг WB</h3>
+      <p style="font-size:24px; font-weight:800; margin:8px 0;">
+        Прод. <span class="bad">−58</span> / Вывод. <span class="good">+67</span>
+      </p>
+      <p style="margin:0; font-size:14px;">Покупатели уходят с активного ассортимента на
+        распродажный. Если станет трендом — будет давить маржинальность.</p>
+    </div>
+    <div class="what-fails">
+      <strong class="bad">Сигнал 3 (high)</strong>
+      <h3 style="margin-top:8px;">CPO внутр. рекламы WB</h3>
+      <p style="font-size:24px; font-weight:800; margin:8px 0;">
+        <span class="bad">136 ₽</span>
+        <span style="font-size:14px; color:var(--muted);">↑ со 114 ₽ (+19.6%)</span>
+      </p>
+      <p style="margin:0; font-size:14px;">Бюджет тот же, заказов на −16%. Прямое следствие просадки конверсии
+        корзина→заказ — клики оплачены, заказов нет.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:20px; padding:16px 22px; background:#fff8e6; border-radius:10px; border-left:4px solid var(--gold);">
+    Все три сигнала сводятся к <strong>одной первопричине</strong>: что-то изменилось на финальном
+    шаге воронки на WB сегодня. До того как восстановить конверсию корзина→заказ, остальные
+    рычаги дадут малый эффект. Это приоритет №1 на сегодня (21.05).
+  </div>
+</section>
+
+<!-- ========== SLIDE 7: ACTIONS ========== -->
+<section class="slide" id="s7">
+  <div class="slide-num">07 · План действий</div>
+  <h2>Где взять +27 тыс ₽ маржи в день</h2>
+
+  <div class="action-row">
+    <div class="num">1</div>
+    <div>
+      <strong class="wb">Восстановить конверсию WB корзина→заказ до 33–34%</strong>
+      <div class="est">Проверить цены/СПП на топ-5 SKU «Продаётся»; технический статус карточек; структуру оставленных корзин</div>
+    </div>
+    <div class="effect good">+18 тыс ₽/день</div>
+    <div class="est">Запуск за день</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">2</div>
+    <div>
+      <strong class="wb">Установить потолок рекламы WB 60 тыс ₽/день</strong>
+      <div class="est">Дни с расходом &gt; 90 тыс ₽ не дают прироста заказов, но съедают маржу. Подтверждено 9-дневной динамикой</div>
+    </div>
+    <div class="effect good">+7 тыс ₽/день перегрева</div>
+    <div class="est">Запуск за день</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">3</div>
+    <div>
+      <strong class="wb">Стабилизировать CPO внутр. рекламы WB</strong>
+      <div class="est">Следствие №1: при восстановлении конверсии CPO вернётся с 136 ₽ к 114 ₽</div>
+    </div>
+    <div class="effect good">+1 тыс ₽/день</div>
+    <div class="est">Автоматически с №1</div>
+  </div>
+
+  <div class="action-row">
+    <div class="num">4</div>
+    <div>
+      <strong class="ozon">Вернуть заказы Ozon к 105–110/день</strong>
+      <div class="est">17–18.05 был уровень 105 шт/день. Сегодня 101 — проверить, не упал ли индекс цены или видимость карточек на Ozon</div>
+    </div>
+    <div class="effect good">+1.5 тыс ₽/день</div>
+    <div class="est">Запуск за день</div>
+  </div>
+
+  <div style="margin-top: 32px; padding: 20px 24px; background:#fff8e6; border-radius:12px; border-left:4px solid var(--gold);">
+    <strong>Суммарный потенциал: +27.5 тыс ₽ маржи в день.</strong>
+    Ровно тот разрыв до плана, который мы видим (+27.2 тыс ₽/день).
+    Все рычаги — операционные, без дополнительного бюджета. Самое
+    важное — действие №1: остальные либо его следствия (№3), либо
+    дополняют (№2, №4).
+  </div>
+</section>
+
+<div class="footer">
+  Данные: БД Wildberries и Ozon · снимок 21.05.2026 ·
+  Версия скилла: rnp-report v1.6, схема 1.1.0
+</div>
+
+<script>
+// TOC auto-close
+(function() {
+  const toc = document.getElementById('toc');
+  if (!toc) return;
+  toc.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setTimeout(() => toc.removeAttribute('open'), 150)));
+  document.addEventListener('click', e => { if (toc.hasAttribute('open') && !toc.contains(e.target)) toc.removeAttribute('open'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') toc.removeAttribute('open'); });
+})();
+
+Chart.defaults.font.family = '-apple-system,"Segoe UI",sans-serif';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#1a1a2e';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.padding = 14;
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(26,26,46,0.95)';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+
+const DAYS = ['12.05','13.05','14.05','15.05','16.05','17.05','18.05','19.05','20.05'];
+const WB_MARGIN  = [166137, 214005, 246031, 166556, 244477, 259794, 236311, 239207, 231915];
+const OZ_MARGIN  = [27700,  31946,  27589,  15071,  36828,  38327,  21872,  22851,  24824];
+const WB_ORDERS  = [1124,   1100,   1053,   1051,   1012,   1166,   1036,   1098,   1107];
+const WB_ADS     = [91705,  96964,  35066,  112122, 40900,  50275,  35995,  38017,  38252];
+
+// Total daily margin + target line
+const TOTAL = WB_MARGIN.map((w,i) => w + OZ_MARGIN[i]);
+const TARGET = Array(DAYS.length).fill(277348);
+
+new Chart(document.getElementById('ch-daily-margin'), {
+  data: {
+    labels: DAYS,
+    datasets: [
+      { type:'bar', label:'WB', data:WB_MARGIN, backgroundColor:'rgba(15,118,110,0.8)', stack:'s' },
+      { type:'bar', label:'Ozon', data:OZ_MARGIN, backgroundColor:'rgba(0,91,255,0.8)', stack:'s' },
+      { type:'line', label:'Целевой темп (277 348 ₽/день)', data:TARGET, borderColor:'#b91c1c', backgroundColor:'transparent', borderWidth:2, borderDash:[6,4], pointRadius:0 },
+    ],
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    scales: {
+      x: { stacked:true },
+      y: { stacked:true, ticks:{ callback:v => (v/1000).toFixed(0)+' тыс' } },
+    },
+    plugins: {
+      tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y.toLocaleString('ru-RU').replace(/,/g,' ') + ' ₽' } },
+    },
+  },
+});
+
+new Chart(document.getElementById('ch-wb-orders-ads'), {
+  data: {
+    labels: DAYS,
+    datasets: [
+      { type:'bar', label:'Расход рекламы WB, ₽', data:WB_ADS, backgroundColor:'rgba(180,83,9,0.6)', borderColor:'#b45309', borderWidth:1, yAxisID:'y' },
+      { type:'line', label:'Заказы WB, шт', data:WB_ORDERS, borderColor:'#0f766e', backgroundColor:'#0f766e', borderWidth:3, tension:0.3, pointRadius:6, yAxisID:'y1' },
+    ],
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    scales: {
+      y:  { position:'left',  title:{display:true,text:'Расход рекламы, ₽'}, ticks:{ callback:v => (v/1000).toFixed(0)+' тыс' } },
+      y1: { position:'right', title:{display:true,text:'Заказы, шт'}, grid:{drawOnChartArea:false}, suggestedMin:1000, suggestedMax:1200 },
+    },
+  },
+});
+</script>
+
+</body>
+</html>
